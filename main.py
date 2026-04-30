@@ -24,9 +24,12 @@ class ShallowLSTM(nn.Module):
         return x
 
     def predict(self, x):
-        x = self.scaler.transform(x)
+        if self.scaler is not None:
+            x = self.scaler.transform(x)
         x = self.forward(x)
-        return self.scaler.inverse_transform(x)
+        if self.scaler is not None:
+            x = self.scaler.inverse_transform(x)
+        return x
 
 class EarlyStopping:
     def __init__(self, patience: int = 5, delta: float = 1e-3):
@@ -43,12 +46,11 @@ class EarlyStopping:
             self.best_model_state = model.state_dict()
             self.counter = 0
             if model_path is not None:
-                torch.save(model.state_dict(), model_path)
+                torch.save(model, model_path)
         else:
             self.counter += 1
             if self.counter >= self.patience:
                 self.early_stop = True
-
 
     def load_best_model(self, model):
         model.load_state_dict(self.best_model_state)
@@ -78,7 +80,7 @@ def main():
     # Split into train-validation-test
     print("Splitting data...")
     samples_in_year = 365 * 24 * 6
-    train_data = data.iloc[:-samples_in_year]
+    train_data = data.iloc[-3 * samples_in_year:-samples_in_year]
     test_data = data.iloc[-samples_in_year:]
     train_data, val_data = train_test_split(train_data, test_size=0.2, shuffle=False)
 

@@ -56,6 +56,12 @@ class EarlyStopping:
         model.load_state_dict(self.best_model_state)
 
 
+def pick_device():
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+
 def build_data(data: pd.DataFrame, lookback=1, lookahead=1):
     feature_columns = ['ws_x', 'ws_y', 'ti', 'rho']
     target_columns = ['ws_x', 'ws_y']
@@ -70,7 +76,7 @@ def build_data(data: pd.DataFrame, lookback=1, lookahead=1):
 def main():
     # Load data
     print("Loading data...")
-    data = pd.read_pickle('data/Horns_rev1.pkl')
+    data = pd.read_pickle('./data/Horns_rev1.pkl')
 
     # Preprocess
     print("Preprocessing data...")
@@ -105,29 +111,35 @@ def main():
     loss_function = nn.MSELoss()
     early_stopping = EarlyStopping(patience=5, delta=0.001)
 
+    # Picking device
+    device = pick_device()
+    print(f"Using device: {device}...")
+    model = model.to(device)
+
     # Run training
     n_epochs = 100
     print(f"Training model for {n_epochs} epochs...")
     for epoch in trange(n_epochs):
         print(f" - Starting epoch #{epoch}")
         model.train()
-        for x, y in train_dataloader:
+        for i, (x, y) in enumerate(train_dataloader):
+            x, y = x.to(device), y.to(device)
             y_hat = model.forward(x)
             loss = loss_function(y_hat, y)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            print(f" - Epoch #{epoch}: batch MSE {loss:.4f}")
+            print(f" - Epoch #{epoch}: batch {i}/{len(train_dataloader)} MSE {loss:.4f}")
 
         model.eval()
         with torch.no_grad():
-            y_hat = model.forward(x_train)
-            train_loss = loss_function(y_hat, y_train)
-            y_hat = model.forward(x_val)
-            val_loss = loss_function(y_hat, y_val)
+            y_hat = model.forward(x_train.to(device))
+            train_loss = loss_function(y_hat, y_train.to(device)).item()
+            y_hat = model.forward(x_val.to(device))
+            val_loss = loss_function(y_hat, y_val.to(device)).item()
         print(f"Epoch #{epoch}: train MSE {train_loss:.4f}, validation MSE {val_loss:.4f}")
 
-        early_stopping(val_loss, model, model_path=f'models/ShallowLSTM_epoch{epoch}_vloss{val_loss:.4f}.pkl')
+        early_stopping(val_loss, model, model_path=f'./models/ShallowLSTM_epoch{epoch}_vloss{val_loss:.4f}.pth')
         if early_stopping.early_stop:
             print("Early stopping")
             break

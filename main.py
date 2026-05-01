@@ -144,6 +144,13 @@ def main():
             print("Early stopping")
             break
 
+    x_test, y_test = build_data(test_data, lookback=6 * 24 * 5, lookahead=6 * 24 * 2)
+    model.eval()
+    with torch.no_grad():
+        y_hat = model.predict(x_test.to(device))
+        test_loss = loss_function(y_hat, y_test.to(device)).item()
+        print(f"Test MSE {test_loss:.4f}")
+
 
 if __name__ == "__main__":
     main()

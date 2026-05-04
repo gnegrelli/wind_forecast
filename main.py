@@ -10,6 +10,8 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
 
+from model.encoder_decoder import EncoderDecoder
+
 
 class ShallowLSTM(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, scaler=None):
@@ -106,7 +108,8 @@ def main():
 
     # Define model, optimizer and loss function
     print("Defining model...")
-    model = ShallowLSTM(6 * 24 * 5 * 4, 6 * 24 * 5, 6 * 24 * 2 * 2, scaler=scaler)
+    # model = ShallowLSTM(4, 20, 2, scaler=scaler)
+    model = EncoderDecoder(4, 20, 2, 4096, 6 * 24 * 2, scaler=scaler)
     optimizer = Adam(model.parameters())
     loss_function = nn.MSELoss()
     early_stopping = EarlyStopping(patience=5, delta=0.001)

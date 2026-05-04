@@ -3,3 +3,6 @@ venv/
 .idea
 
 models/
+
+__pycache__/
+*.pyc

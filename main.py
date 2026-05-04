@@ -68,10 +68,10 @@ def build_data(data: pd.DataFrame, lookback=1, lookahead=1):
     features = []
     targets = []
     for i in trange(lookback, data.shape[0] - lookahead):
-        features.append(data.iloc[i - lookback:i][feature_columns].T.values.flatten().tolist())
-        targets.append(data.iloc[i:i + lookahead][target_columns].T.values.flatten().tolist())
+        features.append(data.iloc[i - lookback:i][feature_columns].values)
+        targets.append(data.iloc[i:i + lookahead][target_columns].values)
 
-    return torch.tensor(features, requires_grad=True), torch.tensor(targets)
+    return torch.tensor(features, dtype=torch.float32, requires_grad=True), torch.tensor(targets, dtype=torch.float32)
 
 def main():
     # Load data
@@ -80,8 +80,8 @@ def main():
 
     # Preprocess
     print("Preprocessing data...")
-    data['ws_x'] = data.apply(lambda x: x.ws * np.cos(np.pi * x.wd / 180), axis=1)
-    data['ws_y'] = data.apply(lambda x: x.ws * np.sin(np.pi * x.wd / 180), axis=1)
+    data['ws_x'] = data.ws * np.cos(np.pi * data.wd / 180)
+    data['ws_y'] = data.ws * np.sin(np.pi * data.wd / 180)
 
     # Split into train-validation-test
     print("Splitting data...")

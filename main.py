@@ -73,7 +73,7 @@ def build_data(data: pd.DataFrame, lookback=1, lookahead=1):
         features.append(data.iloc[i - lookback:i][feature_columns].values)
         targets.append(data.iloc[i:i + lookahead][target_columns].values)
 
-    return torch.tensor(features, dtype=torch.float32, requires_grad=True), torch.tensor(targets, dtype=torch.float32)
+    return torch.tensor(np.stack(features), dtype=torch.float32, requires_grad=True), torch.tensor(np.stack(targets), dtype=torch.float32)
 
 def main():
     # Load data

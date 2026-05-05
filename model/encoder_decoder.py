@@ -25,7 +25,6 @@ class EncoderDecoder(nn.Module):
         self.scaler = scaler
 
     def forward(self, x):
-        # batch_size = min(self.batch_size, x.size(0))
         batch_size = x.size(0)
         _, hidden = self.encoder_lstm(x)
         input_t = torch.zeros(batch_size, 1, self.output_size, dtype=torch.float32)

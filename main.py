@@ -106,21 +106,29 @@ def main():
     for epoch in trange(n_epochs):
         print(f" - Starting epoch #{epoch}")
         model.train()
-        for i, (x, y) in enumerate(train_dataloader):
+        for batch, (x, y) in enumerate(train_dataloader):
             x, y = x.to(device), y.to(device)
-            y_hat = model.forward(x)
+            
+            preds = model.forward(x)
+            y_hat = preds[:, :, :2]
             loss = loss_function(y_hat, y)
+            
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            print(f" - Epoch #{epoch}: batch {i}/{len(train_dataloader)} MSE {loss:.4f}")
+            
+            print(f" - Epoch #{epoch}: batch {batch + 1}/{len(train_dataloader)} MSE {loss:.4f}")
 
         model.eval()
         with torch.no_grad():
-            y_hat = model.forward(x_train.to(device))
+            preds = model.forward(x_train.to(device))
+            y_hat = preds[:, :, :2]
             train_loss = loss_function(y_hat, y_train.to(device)).item()
-            y_hat = model.forward(x_val.to(device))
+            
+            preds = model.forward(x_val.to(device))
+            y_hat = preds[:, :, :2]
             val_loss = loss_function(y_hat, y_val.to(device)).item()
+
         print(f"Epoch #{epoch}: train MSE {train_loss:.4f}, validation MSE {val_loss:.4f}")
 
         early_stopping(val_loss, model, model_path=f'./models/ShallowLSTM_epoch{epoch}_vloss{val_loss:.4f}.pth')

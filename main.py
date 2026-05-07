@@ -23,6 +23,7 @@ class ShallowLSTM(nn.Module):
     def forward(self, x):
         x, _ = self.lstm(x)
         x = self.linear(x)
+        x.reshape(x.shape[1]/2, 2)
         return x
 
     def predict(self, x):
@@ -84,12 +85,13 @@ def main():
     print("Preprocessing data...")
     data['ws_x'] = data.ws * np.cos(np.pi * data.wd / 180)
     data['ws_y'] = data.ws * np.sin(np.pi * data.wd / 180)
+    data = data[['ws_x', 'ws_y', 'ti', 'rho']]
 
     # Split into train-validation-test
     print("Splitting data...")
     samples_in_year = 365 * 24 * 6
-    train_data = data.iloc[-3 * samples_in_year:-samples_in_year]
-    test_data = data.iloc[-samples_in_year:]
+    train_data = data.iloc[-2 * samples_in_year:-int(samples_in_year/12)]
+    test_data = data.iloc[-int(samples_in_year/12):]
     train_data, val_data = train_test_split(train_data, test_size=0.2, shuffle=False)
 
     # Scale features

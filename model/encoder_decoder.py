@@ -27,8 +27,8 @@ class EncoderDecoder(nn.Module):
     def forward(self, x):
         batch_size = x.size(0)
         _, hidden = self.encoder_lstm(x)
-        input_t = torch.zeros(batch_size, 1, self.output_size, dtype=torch.float32)
-        output_tensor = torch.zeros(batch_size, self.sequence_length, self.output_size)
+        input_t = torch.zeros(batch_size, 1, self.output_size, dtype=torch.float32, device=x.device)
+        output_tensor = torch.zeros(batch_size, self.sequence_length, self.output_size, device=x.device)
         for t in range(self.sequence_length):
             output_t, hidden = self.decoder_lstm(input_t, hidden)
             output_t = self.linear(output_t)
@@ -41,5 +41,15 @@ class EncoderDecoder(nn.Module):
             x = self.scaler.transform(x)
         x = self.forward(x)
         if self.scaler is not None:
-            x = self.scaler.inverse_transform(x)
+            x = self.scaler.inverse_transform(torch.cat((x, torch.zeros(x.shape[0], 2, x.shape[2])), ))
         return x
+
+    def scale_input(self, x):
+        scales = torch.tensor(self.scaler.scale_[5, 6, 2, 3], dtype=x.dtype)
+        mins = torch.tensor(self.scaler.min_[5, 6, 2, 3], dtype=x.dtype)
+        return scales * x + mins
+
+    def unscale_output(self, x):
+        scales = torch.tensor(self.scaler.scale_[5, 6], dtype=x.dtype)
+        mins = torch.tensor(self.scaler.min_[5, 6], dtype=x.dtype)
+        return (x - mins) / scales

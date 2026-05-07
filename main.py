@@ -6,33 +6,12 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from torch import nn
-from torch.optim import Adam
+from torch.optim import AdamW
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import trange
 
-from model.encoder_decoder import EncoderDecoder
+from model import EncoderDecoder, ShallowLSTM
 
-
-class ShallowLSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, scaler=None):
-        super(ShallowLSTM, self).__init__()
-        self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
-        self.linear = nn.Linear(hidden_size, output_size)
-        self.scaler = scaler
-
-    def forward(self, x):
-        x, _ = self.lstm(x)
-        x = self.linear(x)
-        x.reshape(x.shape[1]/2, 2)
-        return x
-
-    def predict(self, x):
-        if self.scaler is not None:
-            x = self.scaler.transform(x)
-        x = self.forward(x)
-        if self.scaler is not None:
-            x = self.scaler.inverse_transform(x)
-        return x
 
 class EarlyStopping:
     def __init__(self, patience: int = 5, delta: float = 1e-3):
@@ -43,7 +22,7 @@ class EarlyStopping:
         self.counter = 0
         self.best_model_state = None
 
-    def __call__(self, val_loss, model, model_path: str = None):
+    def __call__(self, val_loss, model, model_path: str | None = None):
         if val_loss < self.best_score - self.delta:
             self.best_score = val_loss
             self.best_model_state = model.state_dict()
@@ -110,9 +89,9 @@ def main():
 
     # Define model, optimizer and loss function
     print("Defining model...")
-    # model = ShallowLSTM(4, 20, 2, scaler=scaler)
-    model = EncoderDecoder(4, 20, 2, 4096, 6 * 24 * 2, scaler=scaler)
-    optimizer = Adam(model.parameters())
+    model = ShallowLSTM(4, 20, 2, scaler=scaler)
+    # model = EncoderDecoder(4, 20, 2, 4096, 6 * 24 * 2, scaler=scaler)
+    optimizer = AdamW(model.parameters(), lr=1e-4)
     loss_function = nn.MSELoss()
     early_stopping = EarlyStopping(patience=5, delta=0.001)
 

@@ -21,10 +21,10 @@ class ShallowLSTM(nn.Module):
         
         # Transform input
         if self.scaler is not None:
-            x = self.scaler.transform(x)
+            x = torch.tensor(self.scaler.scale_, device=x.device, dtype=x.dtype) * x + torch.tensor(self.scaler.min_, device=x.device, dtype=x.dtype)
 
         input_sequence_len = x.size[1]
-        output = torch.zeros(x.size[0], self.sequence_length, x.size[2])
+        output = torch.zeros(x.size[0], self.sequence_length, x.size[2], device=x.device)
         
         for i in range(self.sequence_length):
             # Predict next time step
@@ -34,7 +34,9 @@ class ShallowLSTM(nn.Module):
             x = torch.cat((x, z), dim=1)
 
             # Store transformed value into output tensor
-            output[:, i, :] = self.scaler.inverse_transform(z)
+            if self.scaler is not None:
+                z = (z - torch.tensor(self.scaler.min_, device=z.device, dtype=z.dtype))/torch.tensor(self.scaler.scale_, device=z.device, dtype=z.dtype)
+            output[:, i, :] = z
 
         # Return only values for ws_x and ws_y
         return output[:, :, :2]

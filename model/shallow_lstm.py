@@ -8,13 +8,13 @@ class ShallowLSTM(nn.Module):
         super(ShallowLSTM, self).__init__()
         self.sequence_length = sequence_length
         self.lstm = nn.LSTM(input_size, hidden_size, batch_first=True)
-        self.relu = nn.ReLU
+        self.relu = nn.ReLU()
         self.linear = nn.Linear(hidden_size, input_size)
         self.scaler = scaler
 
     def forward(self, x):
-        x = self.relu(self.lstm(x))
-        x = self.linear(x)
+        x, _ = self.lstm(x)
+        x = self.linear(self.relu(x[:, -1:, :]))
         return x
 
     def predict(self, x):

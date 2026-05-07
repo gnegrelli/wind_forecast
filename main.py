@@ -82,8 +82,8 @@ def main():
     val_dataset = pd.DataFrame(scaler.transform(val_data), columns=val_data.columns)
 
     print("Building datasets...")
-    x_train, y_train = build_data(train_dataset, lookback=6 * 24 * 5, lookahead=6 * 24 * 2)
-    x_val, y_val = build_data(val_dataset, lookback=6 * 24 * 5, lookahead=6 * 24 * 2)
+    x_train, y_train = build_data(train_dataset, lookback=6 * 24 * 5, lookahead=1)
+    x_val, y_val = build_data(val_dataset, lookback=6 * 24 * 5, lookahead=1)
 
     train_dataloader = DataLoader(TensorDataset(x_train, y_train), batch_size=4096, shuffle=True)
 

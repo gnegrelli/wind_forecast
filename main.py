@@ -41,8 +41,8 @@ class EarlyStopping:
 def pick_device():
     if torch.backends.mps.is_available():
         return "mps"
-    return "cuda" if torch.cuda.is_available() else "cpu"
-
+    # return "cuda" if torch.cuda.is_available() else "cpu"
+    return "cpu"
 
 def build_data(data: pd.DataFrame, lookback=1, lookahead=1):
     feature_columns = ['ws_x', 'ws_y', 'ti', 'rho']
@@ -91,9 +91,10 @@ def main():
     print("Defining model...")
     model = ShallowLSTM(4, 20, 2, scaler=scaler)
     # model = EncoderDecoder(4, 20, 2, 4096, 6 * 24 * 2, scaler=scaler)
-    optimizer = AdamW(model.parameters(), lr=1e-4)
+    # model = torch.load('./models/ShallowLSTM_epoch15_vloss0.0016.pth', weights_only=False)
+    optimizer = AdamW(model.parameters(), lr=1e-3)
     loss_function = nn.MSELoss()
-    early_stopping = EarlyStopping(patience=5, delta=0.001)
+    early_stopping = EarlyStopping(patience=5, delta=1e-5)
 
     # Picking device
     device = pick_device()
@@ -109,7 +110,7 @@ def main():
         for batch, (x, y) in enumerate(train_dataloader):
             x, y = x.to(device), y.to(device)
             
-            preds = model.forward(x)
+            preds, _ = model.forward(x)
             y_hat = preds[:, :, :2]
             loss = loss_function(y_hat, y)
             
@@ -121,11 +122,11 @@ def main():
 
         model.eval()
         with torch.no_grad():
-            preds = model.forward(x_train.to(device))
+            preds, _ = model.forward(x_train.to(device))
             y_hat = preds[:, :, :2]
             train_loss = loss_function(y_hat, y_train.to(device)).item()
             
-            preds = model.forward(x_val.to(device))
+            preds, _ = model.forward(x_val.to(device))
             y_hat = preds[:, :, :2]
             val_loss = loss_function(y_hat, y_val.to(device)).item()
 
